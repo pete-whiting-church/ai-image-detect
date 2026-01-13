@@ -12,27 +12,28 @@ First run takes about a minute as it downloads models. After it completes, look 
  
 ## Features
 
-- **Multi-technique Detection**: Combines neural network analysis (CLIP-based), noise residual patterns, and frequency spectrum analysis
+- **Multi-technique Detection**: Combines neural network analysis (Hugging Face transformer model), noise residual patterns, and frequency spectrum analysis
 - **Visual Explanations**: Generates comprehensive reports showing exactly why an image was flagged
-- **No Training Required**: Uses pre-trained CLIP model with forensic analysis
-- **Interactive Reports**: Multi-panel visualizations with:
+- **No Training Required**: Uses pre-trained Ateeqq/ai-vs-human-image-detector model (99.23% accuracy) with forensic analysis
+- **Interactive Reports**: 4×4 multi-panel visualizations with:
   - AI probability heatmaps
-  - Suspicious region highlighting
-  - Noise residual analysis
-  - Frequency spectrum fingerprints
-  - Top suspicious patches
+  - Suspicious region highlighting with dimensions
+  - Full-image and per-region noise residual analysis
+  - Full-image and per-region frequency spectrum fingerprints
+  - Top 3 suspicious regions analyzed independently
+- **HEIC Support**: Works with iPhone photos (.heic format)
 
 ## Detection Methods
 
 The detector implements techniques from Hany Farid's TED Talk on spotting fake AI photos:
 
-1. **Neural Network Analysis**: CLIP-based universal detector that generalizes across multiple AI generators (Stable Diffusion, DALL-E, Midjourney, GANs)
+1. **Neural Network Analysis**: Pre-trained Ateeqq model (99.23% accuracy) that generalizes across multiple AI generators (Stable Diffusion, DALL-E, Midjourney, GANs)
 
 2. **Residual Noise Patterns**: Real cameras leave consistent sensor noise; AI images have different residual structures
 
 3. **Frequency Spectrum Analysis**: Many AI generators leave periodic patterns or "GAN fingerprints" visible in frequency space
 
-4. **Patch-based Regional Analysis**: Identifies specific suspicious regions within images
+4. **Patch-based Regional Analysis**: Identifies specific suspicious regions within images and analyzes each independently
 
 ## Installation
 
@@ -43,19 +44,13 @@ The detector implements techniques from Hany Farid's TED Talk on spotting fake A
 
 ### Setup
 
-1. Install dependencies using `uv`:
+Install dependencies using `uv`:
 
 ```bash
 uv pip install -r requirements.txt
 ```
 
-2. Install CLIP:
-
-```bash
-uv pip install git+https://github.com/openai/CLIP.git
-```
-
-That's it! The detector uses pre-trained models, so no training or additional downloads are needed.
+That's it! The detector uses pre-trained models from Hugging Face, which will be automatically downloaded (~343MB) on first run.
 
 ## Usage
 
@@ -68,10 +63,10 @@ python detect.py image.jpg
 ```
 
 This will:
-1. Load the image
-2. Analyze it using the CLIP-based detector
+1. Load the image (supports JPEG, PNG, HEIC, and more)
+2. Analyze it using the Hugging Face transformer model
 3. Generate forensic features (noise residuals, FFT spectrum)
-4. Create a comprehensive visual report in `reports/image_report.png`
+4. Create a comprehensive 4×4 visual report in `reports/image_report.png`
 
 ### Analyze Multiple Images
 
@@ -116,19 +111,20 @@ python detect.py image.jpg --tile-size 256 --stride 128
 
 ## Understanding the Report
 
-The generated report contains 6 panels:
+The generated report is a 4×4 grid (16 panels) organized as follows:
 
-1. **Original Image with Bounding Boxes**: Shows the top suspicious regions marked with red/orange boxes and probability scores
-
+### Row 1: Full Image Analysis
+1. **Full Image (All Regions)**: Shows all suspicious regions marked with red/orange boxes and probability scores
 2. **AI Probability Heatmap**: Color-coded map where warmer colors (red) indicate regions more likely to be AI-generated
+3. **GAN Fingerprint (Full)**: FFT spectrum of entire image showing periodic patterns
+4. **Noise Residual (Full)**: Visualization of sensor noise patterns across the entire image
 
-3. **Most Suspicious Region (Zoom)**: Close-up of the highest-scoring patch
-
-4. **Noise Residual (Full Image)**: Visualization of sensor noise patterns across the entire image
-
-5. **Noise Residual (Suspicious Region)**: Detailed noise analysis of the most suspicious area
-
-6. **Frequency Spectrum Analysis**: FFT spectrum showing periodic patterns that may indicate AI generation
+### Rows 2-4: Individual Region Analysis
+Each of the top 3 suspicious regions gets a dedicated row with 4 panels:
+- **Column 1**: Full image with only this region highlighted
+- **Column 2**: Zoomed view of the region with dimensions (e.g., "224×224px") and probability
+- **Column 3**: GAN fingerprint (FFT spectrum) for this specific region
+- **Column 4**: Noise residual analysis for this specific region
 
 ### Interpreting Results
 
@@ -153,8 +149,9 @@ Input Image
     |
     v
 +-----------------------------------+
-| CLIP Feature Extraction           |
-| (Pre-trained ViT-L/14)            |
+| Hugging Face Transformer Model    |
+| (Ateeqq/ai-vs-human-image-detector)|
+| 99.23% accuracy                   |
 +-----------------------------------+
     |
     v
@@ -164,25 +161,28 @@ Input Image
 | - Noise Residual Extraction       |
 | - FFT Spectrum Analysis           |
 | - Patch-based Scoring             |
+| - Per-region Forensics            |
 +-----------------------------------+
     |
     v
 +-----------------------------------+
-| Multi-Panel Report Generation     |
+| 4×4 Multi-Panel Report Generation |
 |                                   |
 | - Probability Heatmaps            |
 | - Suspicious Region Highlighting  |
 | - Forensic Feature Visualization  |
+| - Regional Analysis (Top 3)       |
 +-----------------------------------+
 ```
 
 ### Technical Details
 
-- **Model**: CLIP ViT-L/14 (Vision Transformer)
-- **Patch Size**: 224×224 pixels (CLIP standard)
+- **Model**: Ateeqq/ai-vs-human-image-detector (Hugging Face Transformers)
+- **Patch Size**: 224×224 pixels
 - **Stride**: 112 pixels (50% overlap for robustness)
 - **Denoising**: OpenCV's fastNlMeansDenoisingColored
 - **FFT**: NumPy's FFT2 with Hann windowing
+- **Report Size**: 20×14 inches at 150 DPI (optimized for digital viewing)
 
 ## Testing with Sample Images
 
@@ -216,7 +216,7 @@ This will analyze both images and generate comparison reports.
 You can use the detector programmatically:
 
 ```python
-from clip_detector import create_detector
+from huggingface_detector import create_detector
 from report_generator import generate_report
 
 # Initialize detector
@@ -229,12 +229,13 @@ result = generate_report(
     output_path="report.png",
     tile_size=224,
     stride=112,
-    top_k=5
+    top_k=3  # Analyze top 3 suspicious regions
 )
 
 # Access results
-print(f"Probability: {result['overall_probability']:.1%}")
+print(f"Top Region Probability: {result['top_region_probability']:.1%}")
 print(f"Verdict: {result['verdict']}")
+print(f"Suspicious Regions: {result['num_suspicious_regions']}")
 ```
 
 ### Batch Processing
@@ -250,18 +251,11 @@ done
 ## Technical References
 
 - [Hany Farid's TED Talk: How to Spot Fake AI Photos](https://www.ted.com/talks/hany_farid_how_to_spot_fake_ai_photos)
+- [Ateeqq AI vs Human Image Detector](https://huggingface.co/Ateeqq/ai-vs-human-image-detector)
+- [Hugging Face Transformers](https://huggingface.co/docs/transformers)
 - [UnivFD: Universal Fake Detection](https://github.com/WisconsinAIVision/UniversalFakeDetect)
-- [CLIP: Learning Transferable Visual Models](https://github.com/openai/CLIP)
-- [Grad-CAM: Visual Explanations](https://github.com/jacobgil/pytorch-grad-cam)
 
 ## Troubleshooting
-
-### "CLIP module not found"
-
-Install CLIP:
-```bash
-/opt/homebrew/bin/uv pip install git+https://github.com/openai/CLIP.git
-```
 
 ### "CUDA out of memory"
 
@@ -305,6 +299,6 @@ Farid, H. (2024). How to Spot Fake AI Photos. TED Talk.
 ## Acknowledgments
 
 - Based on detection techniques from Hany Farid's research
-- Uses CLIP from OpenAI
+- Uses Ateeqq/ai-vs-human-image-detector model from Hugging Face
 - Inspired by UnivFD (Universal Fake Detection) approach
 - Forensic analysis techniques from computer vision research community
