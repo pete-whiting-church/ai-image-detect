@@ -46,13 +46,13 @@ The detector implements techniques from Hany Farid's TED Talk on spotting fake A
 1. Install dependencies using `uv`:
 
 ```bash
-/opt/homebrew/bin/uv pip install -r requirements.txt
+uv pip install -r requirements.txt
 ```
 
 2. Install CLIP:
 
 ```bash
-/opt/homebrew/bin/uv pip install git+https://github.com/openai/CLIP.git
+uv pip install git+https://github.com/openai/CLIP.git
 ```
 
 That's it! The detector uses pre-trained models, so no training or additional downloads are needed.
