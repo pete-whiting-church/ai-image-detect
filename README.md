@@ -2,6 +2,14 @@
 
 An interactive forensic tool for detecting AI-generated images with visual explanations. Built using state-of-the-art detection techniques based on [Hany Farid's research](https://www.ted.com/talks/hany_farid_how_to_spot_fake_ai_photos) on detecting synthetic media.
 
+## Quickstart
+```bash
+uv init
+uv pip install -r requirements.txt
+uv run detect.py <your image file>
+```
+First run takes about a minute as it downloads models. After it completes, look in reports for results.  Ignore the output that claims to know if it is AI or not - still figuring that out. Focus instead on the images.
+ 
 ## Features
 
 - **Multi-technique Detection**: Combines neural network analysis (CLIP-based), noise residual patterns, and frequency spectrum analysis
